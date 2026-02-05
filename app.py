@@ -25,7 +25,7 @@ if btn_submit and user_input:
     try:
         # Initialisation de l'IA à l'intérieur du bloc pour économiser le quota
         genai.configure(api_key=st.secrets["GEMINI_KEY"])
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         with st.spinner("1. Analyse par l'IA..."):
             # On force un délai pour calmer les appels successifs
