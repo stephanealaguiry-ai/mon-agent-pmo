@@ -3,6 +3,7 @@ from streamlit_gsheets import GSheetsConnection
 import google.generativeai as genai
 import pandas as pd
 import time
+import plotly.express as px
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="PMO Assistant 2.5", layout="centered")
@@ -84,3 +85,45 @@ st.divider()
 if st.checkbox("📊 Afficher le tableau"):
     df_view = conn.read(spreadsheet=st.secrets["GSHEETS_URL"], ttl="1m")
     st.dataframe(df_view, use_container_width=True)
+
+# ... (reste du code précédent)
+
+st.divider()
+st.subheader("📊 Tableau de Bord Visuel")
+
+if st.checkbox("Afficher les statistiques", value=True):
+    try:
+        # 1. On récupère les données
+        df_stats = conn.read(spreadsheet=st.secrets["GSHEETS_URL"], ttl="1m")
+        
+        if not df_stats.empty:
+            # On suppose que ta 3ème colonne s'appelle 'Statut'
+            # (Sinon, on prend la 3ème colonne par index)
+            col_statut = df_stats.columns[2] 
+            
+            # 2. On prépare les données pour le graphique
+            stats_count = df_stats[col_statut].value_counts().reset_index()
+            stats_count.columns = ['Statut', 'Nombre']
+            
+            # 3. Création du graphique avec des couleurs PMO
+            fig = px.pie(
+                stats_count, 
+                values='Nombre', 
+                names='Statut', 
+                hole=0.4, # Pour en faire un "Donut chart" plus moderne
+                color_discrete_sequence=px.colors.qualitative.Pastel
+            )
+            
+            # Affichage dans Streamlit
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Petit résumé textuel à côté
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Total Tâches", len(df_stats))
+            col2.metric("Projets Actifs", df_stats[df_stats.columns[0]].nunique())
+            
+        else:
+            st.info("Le tableau est vide pour le moment.")
+            
+    except Exception as e:
+        st.info("Impossible de générer les graphiques pour l'instant.")
