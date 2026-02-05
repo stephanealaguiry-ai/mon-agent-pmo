@@ -31,19 +31,28 @@ if submit and user_input:
         # vérifiez le nom exact dans AI Studio (ex: 'gemini-2.0-flash-exp')
         model = genai.GenerativeModel('gemini-2.5-flash')
         
-        with st.spinner("Analyse par Gemini 2.5..."):
-            time.sleep(0.5) # Protection quota
+        with st.spinner("Gemini 2.5 analyse votre demande..."):
+            # Voici le "Cerveau" : le prompt en langage naturel
+            instructions = """
+            Tu es un assistant PMO expert. Ta mission est d'extraire des informations structurées depuis une phrase libre.
+            Tu dois identifier 3 éléments : 
+            1. Le Nom du Projet
+            2. La Description de la tâche
+            3. Le Statut (choisis obligatoirement parmi : À faire, En cours, Terminé, ou En attente)
+
+            Réponds UNIQUEMENT sous la forme d'une seule ligne avec les valeurs séparées par des points-virgules.
+            Exemple : Mon Projet;Ma Tâche;En cours
+            """
             
-            prompt = f"Extract to CSV format (Project, Task, Status). Only 3 values, no header: {user_input}"
-            response = model.generate_content(prompt)
+            response = model.generate_content(f"{instructions}\n\nTexte de l'utilisateur : {user_input}")
             
-            # Nettoyage de la réponse
-            raw_text = response.text.replace('"', '').strip()
-            data_list = raw_text.split(",")
-            data_cleaned = [x.strip() for x in data_list][:3]
+            # On nettoie la réponse
+            clean_res = response.text.strip().replace("\n", "")
+            data_cleaned = clean_res.split(";")
             
+            # Sécurité pour s'assurer qu'on a bien nos 3 colonnes
             while len(data_cleaned) < 3:
-                data_cleaned.append("-")
+                data_cleaned.append("Non spécifié")
 
         with st.spinner("Écriture dans le fichier..."):
             # 2. LECTURE & ÉCRITURE
