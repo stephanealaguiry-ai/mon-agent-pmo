@@ -4,7 +4,7 @@ import google.generativeai as genai
 
 # 1. Config IA
 genai.configure(api_key=st.secrets["GEMINI_KEY"])
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('models/gemini-1.5-flash')
 
 st.title("🚀 Mon Agent PMO Simple")
 
