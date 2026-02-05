@@ -10,6 +10,8 @@ def get_model():
             if '1.5-flash' in m.name or 'gemini-pro' in m.name:
                 return m.name
     return 'models/gemini-pro' # Repli sécurisé
+model_name = get_model()
+model = genai.GenerativeModel(model_name)
 
 st.title("🚀 Mon Agent PMO Simple")
 
