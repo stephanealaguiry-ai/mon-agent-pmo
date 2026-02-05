@@ -9,7 +9,7 @@ model = genai.GenerativeModel('gemini-1.5-flash')
 st.title("🚀 Mon Agent PMO Simple")
 
 # 2. Connexion au Sheets (via l'URL directe)
-url = "TON_URL_SHEETS_ICI" # <--- COLLE TON URL ICI
+url = "https://docs.google.com/spreadsheets/d/1vw-Uzu2axUDawt8tfNVE0aY4OoXiXNhXuWYssysxkaY/edit?usp=sharing" # <--- COLLE TON URL ICI
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # Interface
