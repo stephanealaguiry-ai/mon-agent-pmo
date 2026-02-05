@@ -16,15 +16,21 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 prompt = st.text_input("Que voulez-vous ajouter au projet ?")
 
 if st.button("Ajouter au Sheets"):
-    if prompt:
-        with st.spinner("L'IA prépare la ligne..."):
-            # L'IA formate les données
-            response = model.generate_content(f"Transforme en 3 mots séparés par des virgules (Projet, Tâche, Statut) : {prompt}")
-            nouvelle_donnee = response.text.split(",")
+if prompt:
+        with st.spinner("L'IA écrit dans le fichier..."):
+            # L'IA génère les données structurées
+            ai_response = model.generate_content(f"Transforme en 3 colonnes (Projet, Tache, Statut) : {prompt}. Réponds uniquement avec les valeurs séparées par des virgules.")
+            new_row = ai_response.text.split(",")
             
-            # Lecture des données actuelles
+            # Lecture des données existantes
             df_actuel = conn.read(spreadsheet=url)
             
-            # Ajout de la nouvelle ligne (simulation d'écriture)
-            st.success(f"L'IA propose d'ajouter : {response.text}")
-            st.info("Note : Pour l'écriture directe sans badge, l'IA vous donne le texte prêt à être copié !")
+            # Création de la nouvelle ligne
+            new_data = pd.DataFrame([new_row], columns=df_actuel.columns)
+            
+            # Fusion et mise à jour réelle du Sheets
+            df_final = pd.concat([df_actuel, new_data], ignore_index=True)
+            conn.update(spreadsheet=url, data=df_final)
+            
+            st.success("✅ Ligne ajoutée avec succès dans Google Sheets !")
+            st.table(new_data) # Affiche ce qui vient d'être ajouté
