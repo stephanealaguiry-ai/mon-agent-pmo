@@ -16,28 +16,52 @@ model = genai.GenerativeModel(model_name)
 st.title("🚀 Mon Agent PMO Simple")
 
 # 2. Connexion au Sheets (via l'URL directe)
-url = "https://docs.google.com/spreadsheets/d/1vw-Uzu2axUDawt8tfNVE0aY4OoXiXNhXuWYssysxkaY/edit?usp=sharing" # <--- COLLE TON URL ICI
+url = st.secrets["GSHEETS_URL"]
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # Interface
 prompt = st.text_input("Que voulez-vous ajouter au projet ?")
 
-if st.button("Ajouter au Sheets"):
-        if prompt:
-                with st.spinner("L'IA écrit dans le fichier..."):
-                    # L'IA génère les données structurées
-                    ai_response = model.generate_content(f"Transforme en 3 colonnes (Projet, Tache, Statut) : {prompt}. Réponds uniquement avec les valeurs séparées par des virgules.")
-                    new_row = ai_response.text.split(",")
-                    
-                    # Lecture des données existantes
-                    df_actuel = conn.read(spreadsheet=url)
-                    
+if submitted:
+    if not prompt:
+        st.warning("Veuillez saisir un texte avant de valider.")
+    else:
+        try:
+            with st.spinner("L'IA analyse et écrit dans le Sheets..."):
+                # Instruction stricte pour l'IA
+                instruction = "Transforme l'info en 3 colonnes séparées par des points-virgules (Projet;Tache;Statut). Ne réponds rien d'autre."
+                response = model.generate_content(f"{instruction}\n\nTexte : {prompt}")
+                
+                # Nettoyage de la réponse
+                data_list = response.text.strip().split(";")
+                
+                # Petite pause pour respecter le quota gratuit (évite l'erreur 429)
+                time.sleep(1)
+
+                # Lecture du Sheets actuel
+                df_existant = conn.read(spreadsheet=url, ttl=0)
+                
+                # Vérification que l'IA a bien renvoyé 3 éléments
+                if len(data_list) >= 3:
                     # Création de la nouvelle ligne
-                    new_data = pd.DataFrame([new_row], columns=df_actuel.columns)
+                    new_row = pd.DataFrame([data_list[:3]], columns=df_existant.columns[:3])
                     
-                    # Fusion et mise à jour réelle du Sheets
-                    df_final = pd.concat([df_actuel, new_data], ignore_index=True)
+                    # Fusion et Mise à jour
+                    df_final = pd.concat([df_existant, new_row], ignore_index=True)
                     conn.update(spreadsheet=url, data=df_final)
                     
-                    st.success("✅ Ligne ajoutée avec succès dans Google Sheets !")
-                    st.table(new_data) # Affiche ce qui vient d'être ajouté
+                    st.success("✅ Ajouté avec succès dans le Google Sheets !")
+                    st.table(new_row)
+                else:
+                    st.error(f"L'IA a mal formaté la réponse : {response.text}")
+
+        except Exception as e:
+            if "429" in str(e):
+                st.error("⏳ Quota dépassé : Attendez 60 secondes. L'API gratuite limite la vitesse d'envoi.")
+            else:
+                st.error(f"Une erreur est survenue : {e}")
+
+# Affichage du tableau actuel pour vérification
+if st.checkbox("Afficher le contenu actuel du Sheets"):
+    df_visu = conn.read(spreadsheet=url, ttl="10m") # Cache de 10 min pour la lecture
+    st.dataframe(df_visu)
