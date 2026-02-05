@@ -1,31 +1,30 @@
 import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 import google.generativeai as genai
-import gspread
-from google.oauth2.service_account import Credentials
 
 # 1. Config IA
 genai.configure(api_key=st.secrets["GEMINI_KEY"])
 model = genai.GenerativeModel('gemini-1.5-flash')
 
-# 2. Config Google Sheets
-scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-creds = Credentials.from_service_account_info(st.secrets["GCP_SERVICE_ACCOUNT"], scopes=scope)
-client = gspread.authorize(creds)
+st.title("🚀 Mon Agent PMO Simple")
 
-st.title("🚀 Mon Agent PMO")
+# 2. Connexion au Sheets (via l'URL directe)
+url = "TON_URL_SHEETS_ICI" # <--- COLLE TON URL ICI
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 # Interface
-prompt = st.text_input("Que voulez-vous ajouter au Sheets ?")
+prompt = st.text_input("Que voulez-vous ajouter au projet ?")
 
-if st.button("Ajouter"):
+if st.button("Ajouter au Sheets"):
     if prompt:
-        with st.spinner("L'IA prépare les données..."):
-            # L'IA formate la réponse pour le Sheets
-            response = model.generate_content(f"Extrais les infos suivantes du texte : '{prompt}'. Réponds uniquement sous ce format : Projet | Tâche | Statut")
-            infos = response.text.split("|")
+        with st.spinner("L'IA prépare la ligne..."):
+            # L'IA formate les données
+            response = model.generate_content(f"Transforme en 3 mots séparés par des virgules (Projet, Tâche, Statut) : {prompt}")
+            nouvelle_donnee = response.text.split(",")
             
-            # Ouverture du fichier et écriture
-            sheet = client.open("test_pmo").sheet1
-            sheet.append_row([i.strip() for i in infos])
+            # Lecture des données actuelles
+            df_actuel = conn.read(spreadsheet=url)
             
-            st.success(f"Ajouté avec succès : {response.text}")
+            # Ajout de la nouvelle ligne (simulation d'écriture)
+            st.success(f"L'IA propose d'ajouter : {response.text}")
+            st.info("Note : Pour l'écriture directe sans badge, l'IA vous donne le texte prêt à être copié !")
